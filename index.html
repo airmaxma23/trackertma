@@ -3,1145 +3,561 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Crypto Portfolio & Strategy Tracker</title>
-  
-  <!-- Telegram Web App SDK -->
+  <title>Crypto Portfolio Tracker</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
   <style>
     :root {
-      /* Автоматическая адаптация под темную/светлую тему Telegram с фолбэками */
-      --bg-color: var(--tg-theme-bg-color, #121212);
-      --card-bg: var(--tg-theme-secondary-bg-color, #1e1e1e);
-      --card-border: #2a2a2a;
-      --text-color: var(--tg-theme-text-color, #ffffff);
-      --text-secondary: var(--tg-theme-hint-color, #8e8e93);
-      --accent-color: var(--tg-theme-button-color, #2980b9);
-      --accent-text: var(--tg-theme-button-text-color, #ffffff);
-      --green: #2ecc71;
-      --red: #e74c3c;
-      --gold: #f1c40f;
-      --purple: #9b59b6;
+      --bg-color: #121214;
+      --card-bg: #1e1e24;
+      --accent: #6366f1;
+      --accent-hover: #4f46e5;
+      --text: #f3f4f6;
+      --text-muted: #9ca3af;
+      --green: #22c55e;
+      --red: #ef4444;
+      --border: #2e2e38;
+      --amber: #f59e0b;
+      --blue: #3b82f6;
     }
 
-    * {
-      box-sizing: border-box;
-      outline: none;
-      -webkit-tap-highlight-color: transparent;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg-color); color: var(--text); padding: 16px; padding-bottom: 80px; }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      margin: 0;
-      padding: 16px;
-      display: flex;
-      justify-content: center;
-    }
+    .card { background: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 16px; border: 1px solid var(--border); }
+    h2, h3 { margin-bottom: 12px; }
 
-    .app-container {
-      width: 100%;
-      max-width: 600px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 8px;
-      border-bottom: 1px solid var(--card-border);
-    }
-
-    .brand {
-      font-size: 18px;
-      font-weight: 700;
-      letter-spacing: -0.5px;
-    }
-
-    .header-actions {
-      display: flex;
-      gap: 8px;
-    }
-
-    .sync-btn {
-      background: rgba(255,255,255,0.05);
-      border: 1px solid var(--card-border);
-      color: var(--text-secondary);
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .sync-btn.active {
-      border-color: var(--green);
-      color: var(--green);
-    }
-
-    .tabs-wrapper {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 4px;
-      scrollbar-width: none;
-    }
-
-    .tabs-wrapper::-webkit-scrollbar { display: none; }
-
-    .tab-btn {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      color: var(--text-secondary);
-      padding: 8px 14px;
+    /* Информер синхронизации */
+    .sync-informer {
+      background: rgba(99, 102, 241, 0.1);
+      border: 1px solid rgba(99, 102, 241, 0.3);
       border-radius: 10px;
-      font-size: 13px;
-      font-weight: 600;
-      white-space: nowrap;
-      cursor: pointer;
-      transition: all 0.25s ease;
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .tab-btn.active {
-      background: var(--accent-color);
-      border-color: var(--accent-color);
-      color: var(--accent-text);
-    }
-
-    .tab-btn.btn-add {
-      background: transparent;
-      border: 1px dashed var(--text-secondary);
-      color: var(--text-secondary);
-    }
-
-    .tab-btn .star-icon { color: var(--gold); font-size: 11px; }
-
-    .tab-content {
-      display: none;
-      opacity: 0;
-      transform: translateY(6px);
-      transition: opacity 0.25s ease, transform 0.25s ease;
-    }
-
-    .tab-content.active {
-      display: block;
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .card {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 14px;
-      padding: 16px;
+      padding: 12px;
       margin-bottom: 16px;
-    }
-
-    .card-title {
-      font-size: 15px;
-      font-weight: 600;
-      margin: 0 0 12px 0;
       display: flex;
-      justify-content: space-between;
       align-items: center;
-    }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
+      justify-content: space-between;
       gap: 12px;
     }
 
-    .stat-box {
+    .sync-informer-text {
+      font-size: 12px;
+      color: #c7d2fe;
+      line-height: 1.4;
+    }
+
+    /* Универсальная панель-фильтр */
+    .period-filter-container {
       display: flex;
       flex-direction: column;
-      gap: 4px;
-    }
-
-    .stat-label {
-      font-size: 11px;
-      color: var(--text-secondary);
-      text-transform: uppercase;
-    }
-
-    .stat-value {
-      font-size: 15px;
-      font-weight: 700;
-    }
-
-    .progress-bar-container {
-      height: 10px;
-      width: 100%;
-      background: #161616;
-      border-radius: 5px;
-      overflow: hidden;
-      display: flex;
-      margin: 8px 0;
-    }
-
-    .progress-segment { height: 100%; transition: width 0.3s ease; }
-    .bg-dca { background: var(--accent-color); }
-    .bg-swing { background: var(--purple); }
-
-    .legend {
-      display: flex;
-      justify-content: space-between;
-      font-size: 12px;
-      color: var(--text-secondary);
-    }
-    .legend-item { display: flex; align-items: center; gap: 6px; }
-    .dot { width: 8px; height: 8px; border-radius: 50%; }
-
-    .strategy-card-dca {
-      border-left: 4px solid var(--accent-color);
-      background: rgba(41, 128, 185, 0.05);
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 10px;
-    }
-
-    .strategy-card-swing {
-      border-left: 4px solid var(--purple);
-      background: rgba(155, 89, 182, 0.05);
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 10px;
-    }
-
-    .table-container { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; }
-    th { color: var(--text-secondary); font-weight: 500; padding: 8px 4px; border-bottom: 1px solid var(--card-border); font-size: 11px; }
-    td { padding: 10px 4px; border-bottom: 1px solid rgba(255,255,255,0.03); }
-
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .input-wrapper { display: flex; flex-direction: column; gap: 4px; position: relative; }
-    .input-wrapper.full { grid-column: span 2; }
-    label { font-size: 11px; color: var(--text-secondary); display: flex; align-items: center; justify-content: space-between; }
-    
-    .info-icon {
-      cursor: pointer;
-      color: var(--accent-color);
-      font-size: 12px;
-      background: rgba(41, 128, 185, 0.15);
-      border-radius: 50%;
-      width: 16px;
-      height: 16px;
-      display: inline-flex;
       align-items: center;
       justify-content: center;
-    }
-
-    input, select {
-      background: #161616;
-      border: 1px solid var(--card-border);
-      color: var(--text-color);
-      padding: 10px 12px;
-      border-radius: 8px;
-      font-size: 13px;
+      gap: 10px;
+      margin-bottom: 16px;
       width: 100%;
     }
 
-    .btn {
-      background: var(--accent-color);
-      color: var(--accent-text);
-      border: none;
-      padding: 11px;
+    .period-select {
+      width: 100%;
+      max-width: 320px;
+      padding: 10px;
+      background: var(--bg-color);
+      color: var(--text);
+      border: 1px solid var(--border);
       border-radius: 8px;
-      font-size: 13px;
+      text-align: center;
+      font-size: 14px;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .custom-date-range {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      width: 100%;
+      max-width: 320px;
+    }
+
+    .custom-date-range input {
+      width: 50%;
+      padding: 8px;
+      background: var(--bg-color);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 12px;
+      color-scheme: dark;
+    }
+
+    /* Кнопки и формы */
+    .btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
       font-weight: 600;
       cursor: pointer;
-      width: 100%;
       display: inline-flex;
-      justify-content: center;
       align-items: center;
+      justify-content: center;
       gap: 6px;
+      text-decoration: none;
+      font-size: 13px;
     }
-    .btn-secondary { background: rgba(255,255,255,0.08); color: var(--text-color); }
-    .btn-danger { background: rgba(231, 76, 60, 0.2); color: var(--red); border: 1px solid var(--red); }
+    .btn:hover { background: var(--accent-hover); }
+    .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-sm { padding: 4px 8px; font-size: 11px; }
 
-    .green { color: var(--green); }
-    .red { color: var(--red); }
-    .badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; }
-    .badge-dca { background: rgba(41, 128, 185, 0.2); color: var(--accent-color); }
-    .badge-swing { background: rgba(155, 89, 182, 0.2); color: var(--purple); }
+    .input-field {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: var(--bg-color);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 8px;
+    }
+
+    /* Модальные окна */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.8);
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 100;
+    }
+    .modal.active { display: flex; }
+    .modal-content { background: var(--card-bg); width: 100%; max-width: 440px; border-radius: 12px; padding: 20px; border: 1px solid var(--border); max-height: 85vh; overflow-y: auto; }
+
+    /* Списки и элементы */
+    .coin-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .coin-row:last-child { border-bottom: none; }
+
+    .informer-box {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: var(--amber);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      margin-top: 4px;
+    }
 
     .faq-item {
-      border-bottom: 1px solid var(--card-border);
-      padding: 10px 0;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
     }
-    .faq-item:last-child { border-bottom: none; }
-    .faq-question { font-weight: 600; font-size: 14px; margin-bottom: 6px; color: var(--text-color); }
-    .faq-answer { font-size: 13px; color: var(--text-secondary); line-height: 1.4; }
-
-    .modal-overlay {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.85); display: flex; justify-content: center; align-items: center;
-      padding: 16px; z-index: 1000; opacity: 0; pointer-events: none; transition: opacity 0.2s ease;
-    }
-    .modal-overlay.active { opacity: 1; pointer-events: auto; }
-    .modal { background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 14px; padding: 20px; width: 100%; max-width: 400px; display: flex; flex-direction: column; gap: 14px; }
-    .modal-actions { display: flex; gap: 8px; margin-top: 8px; }
-    .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--red); color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 13px; font-weight: 500; transition: transform 0.3s ease; z-index: 2000; }
-    .toast.show { transform: translateX(-50%) translateY(0); }
+    .faq-item h4 { color: var(--accent); margin-bottom: 4px; font-size: 14px; }
+    .faq-item p { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
   </style>
 </head>
 <body>
 
-  <div class="app-container">
-    <div class="header">
-      <div class="brand">Crypto Strategy Tracker</div>
-      <div class="header-actions">
-        <button class="sync-btn" id="fetchPricesBtn" onclick="fetchLivePrices()">🔄 Обновить цены</button>
-        <button class="sync-btn" id="syncBtn" onclick="openSyncModal()">☁️ Облако</button>
-      </div>
+  <!-- Верхний Информер Синхронизации -->
+  <div class="sync-informer">
+    <div class="sync-informer-text">
+      ☁️ <b>Облачная синхронизация активна:</b> данные автоматически обновляются между всеми вашими устройствами.
     </div>
-
-    <div class="tabs-wrapper" id="tabsHeader"></div>
-
-    <!-- TAB: SUMMARY -->
-    <div id="tab-summary" class="tab-content">
-      <div class="card">
-        <div class="card-title">Общий портфель</div>
-        <div class="grid-2">
-          <div class="stat-box">
-            <span class="stat-label">Всего инвестировано</span>
-            <span class="stat-value" id="summaryTotalInvested">$0.00</span>
-          </div>
-          <div class="stat-box">
-            <span class="stat-label">Текущая стоимость</span>
-            <span class="stat-value" id="summaryCurrentValue">$0.00</span>
-          </div>
-          <div class="stat-box">
-            <span class="stat-label">Общий PnL (Нереализованный)</span>
-            <span class="stat-value" id="summaryTotalPnL">$0.00</span>
-          </div>
-          <div class="stat-box">
-            <span class="stat-label">Фиксированный профит (Свинг)</span>
-            <span class="stat-value" id="summaryRealizedPnL">$0.00</span>
-          </div>
-        </div>
-
-        <div style="margin-top: 16px;">
-          <span class="stat-label">Распределение стратегий портфеля</span>
-          <div class="progress-bar-container">
-            <div class="progress-segment bg-dca" id="barDCA" style="width: 0%"></div>
-            <div class="progress-segment bg-swing" id="barSwing" style="width: 0%"></div>
-          </div>
-          <div class="legend">
-            <div class="legend-item"><div class="dot bg-dca"></div>DCA (Накопления)</div>
-            <div class="legend-item"><div class="dot bg-swing"></div>Свинг-трейдинг</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Инвестиции за календарный месяц</div>
-        <div class="form-grid" style="margin-bottom: 12px;">
-          <div class="input-wrapper full">
-            <label>Выберите месяц</label>
-            <input type="month" id="summaryMonthPicker" onchange="renderSummary()">
-          </div>
-        </div>
-        <div class="stat-box">
-          <span class="stat-label">Вложено за выбранный месяц</span>
-          <span class="stat-value" id="summaryMonthInvested">$0.00</span>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">Сводка по монетам</div>
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Монета</th>
-                <th>Монет</th>
-                <th>Ср. цена</th>
-                <th>Вложено</th>
-                <th>PnL</th>
-              </tr>
-            </thead>
-            <tbody id="summaryTableBody"></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- TAB: FAQ & GUIDES -->
-    <div id="tab-faq" class="tab-content">
-      <div class="card" style="border: 1px solid var(--accent-color);">
-        <div class="card-title" style="color: var(--accent-color);">
-          <span>🎓 Интерактивный Онбординг</span>
-        </div>
-        <p style="font-size: 13px; color: var(--text-secondary); margin: 0 0 12px 0;">
-          Пройдите короткое пошаговое обучение, чтобы разобраться, как грамотно вести учет DCA и Свинг сделок.
-        </p>
-        <button class="btn" onclick="startOnboarding()">🚀 Запустить обучение</button>
-      </div>
-
-      <div class="card">
-        <div class="card-title">💡 В чем разница между DCA и Swing?</div>
-        <div class="faq-item">
-          <div class="faq-question">🔹 Стратегия DCA (Dollar-Cost Averaging / HODL)</div>
-          <div class="faq-answer">
-            Покупка монеты в долгосрок небольшими частями через равные промежутки времени или при сильных проливах. 
-            <b>Цель:</b> сформировать низкую среднюю цену и накопить капитал на годы. Влияет на «Общий PnL» и «Ср. цену DCA».
-          </div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question">🟣 Стратегия Swing (Спекуляции)</div>
-          <div class="faq-answer">
-            Покупка монеты с целью продать её при первой же волне роста (от нескольких дней до недель). 
-            <b>Цель:</b> забрать чистый профит в $$. Сделки свинга фиксируют прибыль в графу «Зафиксированный Свинг Профит».
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">📡 Как реагировать на сигналы рынка?</div>
-        <div class="faq-item">
-          <div class="faq-question">🔴 Сильный пролив рынка (Market Dip / Crash)</div>
-          <div class="faq-answer">
-            <b>Сигнал:</b> Монета упала на 15–30%.<br>
-            <b>Действие:</b> Вносите покупку под стратегией <b>DCA</b>, чтобы значительно снизить вашу среднюю цену входа.
-          </div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question">🟢 Импульсный рост (Pump / Local High)</div>
-          <div class="faq-answer">
-            <b>Сигнал:</b> Монета выросла на 20–50% за пару дней.<br>
-            <b>Действие:</b> Зафиксируйте часть позиций через сделку <b>SELL (Swing)</b>. Это переведет бумажную прибыль в реальные деньги в статистике.
-          </div>
-        </div>
-        <div class="faq-item">
-          <div class="faq-question">🟡 Боковик / Флэт (Consolidation)</div>
-          <div class="faq-answer">
-            <b>Сигнал:</b> Цена колеблется в узком диапазоне.<br>
-            <b>Действие:</b> Отличное время для локального **Свинг-трейдинга**: покупайте от нижней границы диапазона (BUY Swing) и продавайте у верхней (SELL Swing).
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div id="dynamicTabsContainer"></div>
+    <button class="btn btn-secondary btn-sm" onclick="openFaqModal()" style="white-space: nowrap;">📖 Инструкция</button>
   </div>
 
-  <!-- MODAL: STRATEGY INFO -->
-  <div class="modal-overlay" id="strategyInfoModal">
-    <div class="modal">
-      <h3 style="margin:0; font-size:16px;">💡 Справка по стратегиям</h3>
-      <div style="font-size:13px; color: var(--text-secondary); display:flex; flex-direction:column; gap:10px;">
-        <p style="margin:0;"><b style="color:var(--accent-color);">DCA (Накопление):</b> Используйте для покупок в долгий срок. Покупки усредняют цену монеты, а продажи снижают общую сумму вложений.</p>
-        <p style="margin:0;"><b style="color:var(--purple);">SWING (Трейдинг):</b> Используйте для коротких спекуляций. Все фиксации считаются в отдельную графу «Зафиксированный Свинг Профит».</p>
+  <!-- Блок панели-фильтра и сводки -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h3 style="margin: 0;">📊 Сводка портфеля</h3>
+      <button class="btn btn-secondary btn-sm" onclick="openSyncModal()">🔄 Синхронизация</button>
+    </div>
+    
+    <div class="period-filter-container">
+      <select id="periodSelect" class="period-select" onchange="handlePeriodChange()">
+        <option value="all">За весь период</option>
+        <option value="current_month" selected>Текущий месяц</option>
+        <option value="prev_month">Прошлый месяц</option>
+        <option value="custom">📅 Произвольный период</option>
+      </select>
+
+      <div id="customDateRange" class="custom-date-range" style="display: none;">
+        <input type="date" id="startDate" onchange="renderSummary()">
+        <input type="date" id="endDate" onchange="renderSummary()">
       </div>
-      <div class="modal-actions">
-        <button class="btn" onclick="closeModal('strategyInfoModal')">Понятно</button>
+    </div>
+
+    <div id="summaryStats"></div>
+  </div>
+
+  <!-- Список монет -->
+  <div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <h3>Мои монеты</h3>
+      <div>
+        <button class="btn btn-secondary btn-sm" onclick="openTrashModal()">🗑️ Корзина</button>
+        <button class="btn btn-sm" onclick="openAddCoinModal()">+ Добавить</button>
+      </div>
+    </div>
+    <div id="coinsList"></div>
+  </div>
+
+  <!-- Модальное окно добавления монеты с черновиком -->
+  <div id="addCoinModal" class="modal">
+    <div class="modal-content">
+      <h3>Добавление монеты</h3>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+        Введите ID монеты с сайта CoinGecko (например: <code>bitcoin</code>, <code>ethereum</code>, <code>solana</code>).
+      </p>
+      
+      <a href="https://www.coingecko.com" target="_blank" class="btn btn-secondary" style="width: 100%; margin-bottom: 12px;" onclick="saveCoinDraft()">
+        🔍 Найти ID на CoinGecko ↗
+      </a>
+
+      <input type="text" id="coinIdInput" class="input-field" placeholder="ID монеты (например, solana)">
+      <input type="text" id="coinSymbolInput" class="input-field" placeholder="Тикер (например, SOL)">
+
+      <div style="display: flex; gap: 8px; margin-top: 12px;">
+        <button class="btn btn-secondary" style="flex: 1;" onclick="closeAddCoinModal()">Отмена</button>
+        <button class="btn" style="flex: 1;" onclick="submitAddCoin()">Сохранить</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL: ONBOARDING -->
-  <div class="modal-overlay" id="onboardingModal">
-    <div class="modal">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-size:11px; color:var(--text-secondary); text-transform:uppercase;" id="onboardingStepTitle">Шаг 1 из 5</span>
-        <button style="background:none; border:none; color:var(--text-secondary); cursor:pointer;" onclick="closeModal('onboardingModal')">✕</button>
-      </div>
-      <h3 style="margin:0; font-size:16px;" id="onboardingHeader">Заголовок шага</h3>
-      <p style="font-size:13px; color: var(--text-secondary); margin:0; line-height:1.4;" id="onboardingText">Текст шага</p>
-      <div class="modal-actions">
-        <button class="btn btn-secondary" id="onboardingPrevBtn" onclick="prevOnboardingStep()">Назад</button>
-        <button class="btn" id="onboardingNextBtn" onclick="nextOnboardingStep()">Далее</button>
-      </div>
+  <!-- Модальное окно Корзины -->
+  <div id="trashModal" class="modal">
+    <div class="modal-content">
+      <h3>🗑️ Корзина монет</h3>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+        Удаленные монеты и их история сохраняются ещё 60 дней, после чего автоматически удаляются.
+      </p>
+      <div id="trashList" style="max-height: 280px; overflow-y: auto;"></div>
+      <button class="btn btn-secondary" style="width: 100%; margin-top: 12px;" onclick="closeTrashModal()">Закрыть</button>
     </div>
   </div>
 
-  <!-- MODAL: ADD ASSET -->
-  <div class="modal-overlay" id="addAssetModal">
-    <div class="modal">
-      <h3 style="margin:0; font-size:16px;">Добавить монету</h3>
-      <div class="input-wrapper">
-        <label>Тикер монеты (например: SOL, TON, NEAR)</label>
-        <input type="text" id="newAssetInput" maxlength="20" placeholder="SOL, TON, NEAR">
-      </div>
-      <div class="modal-actions">
-        <button class="btn btn-secondary" onclick="closeModal('addAssetModal')">Отмена</button>
-        <button class="btn" onclick="submitNewAsset()">Создать</button>
-      </div>
+  <!-- Модальное окно Синхронизации / Экспорта -->
+  <div id="syncModal" class="modal">
+    <div class="modal-content">
+      <h3>🔄 Управление данными</h3>
+      <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px;">
+        Перенос портфеля на другой аккаунт или создание резервной копии.
+      </p>
+
+      <button class="btn" style="width: 100%; margin-bottom: 8px;" onclick="sendDataToTelegramBot()">
+        📩 Отправить бэкап-код в чат бота
+      </button>
+
+      <button class="btn btn-secondary" style="width: 100%; margin-bottom: 12px;" onclick="exportDataToClipboard()">
+        📋 Скопировать код в буфер
+      </button>
+
+      <textarea id="importDataInput" class="input-field" style="height: 70px; font-size: 11px;" placeholder="Вставьте скопированный код портфеля..."></textarea>
+      
+      <button class="btn btn-secondary" style="width: 100%; margin-bottom: 12px;" onclick="importDataFromInput()">
+        📥 Применить скопированный код
+      </button>
+
+      <button class="btn btn-secondary" style="width: 100%;" onclick="closeSyncModal()">Закрыть</button>
     </div>
   </div>
 
-  <!-- MODAL: SYNC -->
-  <div class="modal-overlay" id="syncModal">
-    <div class="modal">
-      <h3 style="margin:0; font-size:16px;">Облачная синхронизация</h3>
-      <div class="input-wrapper">
-        <label>Secret Sync Key</label>
-        <input type="text" id="syncKeyInput" placeholder="Оставьте пустым для автосоздания">
+  <!-- Модальное окно FAQ (Инструкция) -->
+  <div id="faqModal" class="modal">
+    <div class="modal-content">
+      <h3>📖 Гайд по синхронизации</h3>
+      
+      <div class="faq-item">
+        <h4>1. Как работает автоматическая синхронизация?</h4>
+        <p>Ваш портфель автоматически сохраняется в <b>Telegram CloudStorage</b>. Если вы откроете бот с телефона и ПК на одном Telegram-аккаунте, все данные подтянутся мгновенно.</p>
       </div>
-      <div class="modal-actions">
-        <button class="btn btn-secondary" onclick="closeModal('syncModal')">Закрыть</button>
-        <button class="btn" onclick="saveSyncKey()">Подключить</button>
+
+      <div class="faq-item">
+        <h4>2. Как перенести данные на ВТОРОЙ аккаунт Telegram?</h4>
+        <p>1) Нажмите <b>«Синхронизация» → «Отправить бэкап-код в чат бота»</b>.<br>
+           2) Перешлите полученное сообщение с кодом на ваш второй аккаунт.<br>
+           3) Скопируйте код, откройте приложение на втором аккаунте, вставьте в поле импорта и нажмите <b>«Применить»</b>.</p>
       </div>
+
+      <div class="faq-item">
+        <h4>3. Что входит в экспортируемый бэкап?</h4>
+        <p>В код включаются все активные монеты, история покупок/продаж, монеты в корзине с сохраненными таймерами удаления и индивидуальные настройки.</p>
+      </div>
+
+      <button class="btn btn-secondary" style="width: 100%; margin-top: 8px;" onclick="closeFaqModal()">Понятно</button>
     </div>
   </div>
-
-  <div class="toast" id="toast"></div>
 
   <script>
-    // Инициализация Telegram WebApp API
-    if (window.Telegram && window.Telegram.WebApp) {
-      const tg = window.Telegram.WebApp;
-      tg.ready();
-      tg.expand();
+    const tg = window.Telegram?.WebApp;
+    if (tg) tg.expand();
+
+    let state = {
+      coins: [],
+      transactions: []
+    };
+
+    async function initApp() {
+      await loadState();
+      cleanExpiredTrash();
+      checkCoinDraft();
+      renderAll();
     }
 
-    const COINGECKO_MAP = {
-      'BTC': 'bitcoin', 'ETH': 'ethereum', 'SOL': 'solana', 'TON': 'the-open-network',
-      'NEAR': 'near', 'AVAX': 'avalanche-2', 'DOT': 'polkadot', 'XRP': 'ripple',
-      'ADA': 'cardano', 'DOGE': 'dogecoin', 'BNB': 'binancecoin', 'LINK': 'chainlink',
-      'SUI': 'sui', 'APT': 'aptos'
-    };
-
-    const DEFAULT_STATE = {
-      assets: ['BTC', 'ETH'],
-      favorites: [],
-      prices: { BTC: 65000, ETH: 3000 },
-      transactions: [
-        { id: '1', asset: 'BTC', type: 'BUY', strategy: 'DCA', date: '2026-08-01', amount: 0.01, price: 60000, total: 600 },
-        { id: '2', asset: 'BTC', type: 'BUY', strategy: 'SWING', date: '2026-08-03', amount: 0.005, price: 62000, total: 310 },
-        { id: '3', asset: 'ETH', type: 'BUY', strategy: 'DCA', date: '2026-08-05', amount: 0.2, price: 2800, total: 560 }
-      ],
-      syncKey: null
-    };
-
-    const ONBOARDING_STEPS = [
-      {
-        title: "Шаг 1: Общая концепция",
-        header: "Разделение стратегий",
-        text: "Приложение позволяет разделять ваши активы на два независимых потока: Долгосрочные накопления (DCA) и Быстрые трейды (Swing). Это предотвращает искажение средней цены вашего основного портфеля."
-      },
-      {
-        title: "Шаг 2: Внесение сделок",
-        header: "Гибкий выбор стратегии",
-        text: "При добавлении покупки или продажи вы свободно выбираете стратегию. DCA усредняет ваш основной баланс, а Swing заносит профит от фиксаций в счетчик спекуляций."
-      },
-      {
-        title: "Шаг 3: Авторасчет полей",
-        header: "Удобный калькулятор",
-        text: "Вам достаточно заполнить любые 2 поля из трех (Сумма $, Количество, Цена), и программа автоматически высчитает третье значение."
-      },
-      {
-        title: "Шаг 4: Облако и Авто-цены",
-        header: "Синхронизация и Рынок",
-        text: "Кнопка '🔄 Обновить цены' подтягивает актуальные курсы монеты с CoinGecko. Кнопка '☁️ Облако' создаст ключ для синхронизации портфеля между смартфонами и ПК."
-      },
-      {
-        title: "Шаг 5: Аналитика и Сводка",
-        header: "Полный контроль",
-        text: "На главной вкладке 'Сводка' вы видите общий нереализованный PnL, зафиксированный профит в долларах и динамику инвестиций за выбранный месяц."
+    // Сохранение в CloudStorage + LocalStorage
+    async function saveState() {
+      const serialized = JSON.stringify(state);
+      localStorage.setItem('crypto_tracker_state', serialized);
+      if (tg?.CloudStorage) {
+        tg.CloudStorage.setItem('crypto_tracker_state', serialized);
       }
-    ];
-
-    let currentOnboardingStep = 0;
-    let state = JSON.parse(localStorage.getItem('crypto_tracker_state')) || DEFAULT_STATE;
-    let activeTab = 'summary';
-
-    function saveState() {
-      localStorage.setItem('crypto_tracker_state', JSON.stringify(state));
-      if (state.syncKey) pushToCloud();
-      render();
     }
 
-    function parseNumber(val) {
-      if (!val) return 0;
-      const parsed = parseFloat(val.toString().replace(',', '.').trim());
-      return isNaN(parsed) ? 0 : parsed;
+    // Загрузка из CloudStorage
+    async function loadState() {
+      if (tg?.CloudStorage) {
+        return new Promise((resolve) => {
+          tg.CloudStorage.getItem('crypto_tracker_state', (err, value) => {
+            if (!err && value) {
+              state = JSON.parse(value);
+            } else {
+              const local = localStorage.getItem('crypto_tracker_state');
+              if (local) state = JSON.parse(local);
+            }
+            resolve();
+          });
+        });
+      } else {
+        const local = localStorage.getItem('crypto_tracker_state');
+        if (local) state = JSON.parse(local);
+      }
     }
 
-    function showToast(msg) {
-      const toast = document.getElementById('toast');
-      toast.innerText = msg;
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 3000);
+    // Отправка резервного кода в чат Telegram-бота
+    function sendDataToTelegramBot() {
+      if (!tg) return alert('Доступно только внутри Telegram Mini App');
+      const payload = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+      
+      tg.sendData(JSON.stringify({
+        action: 'BACKUP_EXPORT',
+        payload: payload
+      }));
+      alert('Резервный код успешно отправлен в диалог с ботом!');
     }
 
-    async function fetchLivePrices() {
-      const btn = document.getElementById('fetchPricesBtn');
-      btn.innerText = '⏳ Загрузка...';
+    // Экспорт в буфер обмена
+    function exportDataToClipboard() {
+      const payload = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+      navigator.clipboard.writeText(payload);
+      alert('Код портфеля скопирован! Вы можете вставить его на другом устройстве.');
+    }
 
-      const idsToFetch = state.assets
-        .map(a => COINGECKO_MAP[a] || a.toLowerCase())
-        .join(',');
+    // Ручной импорт кода
+    function importDataFromInput() {
+      const raw = document.getElementById('importDataInput').value.trim();
+      if (!raw) return alert('Вставьте код портфеля');
 
       try {
-        const res = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${idsToFetch}&vs_currencies=usd`);
-        const data = await res.json();
-
-        state.assets.forEach(asset => {
-          const geckoId = COINGECKO_MAP[asset] || asset.toLowerCase();
-          if (data[geckoId] && data[geckoId].usd) {
-            state.prices[asset] = data[geckoId].usd;
-          }
-        });
-
-        saveState();
-        showToast("Цены обновлены!");
-      } catch (e) {
-        showToast("Ошибка при загрузке цен");
-      } finally {
-        btn.innerText = '🔄 Обновить цены';
-      }
-    }
-
-    function getOrderedAssets() {
-      const defaults = ['BTC', 'ETH'];
-      const others = state.assets.filter(a => !defaults.includes(a));
-      const favs = others.filter(a => state.favorites.includes(a));
-      const nonFavs = others.filter(a => !state.favorites.includes(a));
-      return [...defaults, ...favs, ...nonFavs];
-    }
-
-    function switchTab(tabId) {
-      activeTab = tabId;
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-
-      const activeBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
-      const activeContent = document.getElementById(`tab-${tabId}`);
-      if (activeBtn) activeBtn.classList.add('active');
-      if (activeContent) activeContent.classList.add('active');
-    }
-
-    function toggleFavorite(asset) {
-      if (state.favorites.includes(asset)) {
-        state.favorites = state.favorites.filter(a => a !== asset);
-      } else {
-        state.favorites.push(asset);
-      }
-      saveState();
-    }
-
-    function openModal(id) { document.getElementById(id).classList.add('active'); }
-    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-
-    function startOnboarding() {
-      currentOnboardingStep = 0;
-      updateOnboardingModal();
-      openModal('onboardingModal');
-    }
-
-    function updateOnboardingModal() {
-      const step = ONBOARDING_STEPS[currentOnboardingStep];
-      document.getElementById('onboardingStepTitle').innerText = step.title;
-      document.getElementById('onboardingHeader').innerText = step.header;
-      document.getElementById('onboardingText').innerText = step.text;
-
-      document.getElementById('onboardingPrevBtn').style.display = currentOnboardingStep === 0 ? 'none' : 'block';
-      document.getElementById('onboardingNextBtn').innerText = currentOnboardingStep === ONBOARDING_STEPS.length - 1 ? 'Завершить' : 'Далее';
-    }
-
-    function nextOnboardingStep() {
-      if (currentOnboardingStep < ONBOARDING_STEPS.length - 1) {
-        currentOnboardingStep++;
-        updateOnboardingModal();
-      } else {
-        closeModal('onboardingModal');
-      }
-    }
-
-    function prevOnboardingStep() {
-      if (currentOnboardingStep > 0) {
-        currentOnboardingStep--;
-        updateOnboardingModal();
-      }
-    }
-
-    function submitNewAsset() {
-      const input = document.getElementById('newAssetInput');
-      const name = input.value.trim().toUpperCase();
-      if (!name || name.length > 20 || state.assets.includes(name)) {
-        showToast("Ошибка при добавлении тикера");
-        return;
-      }
-      state.assets.push(name);
-      state.prices[name] = 0;
-      input.value = '';
-      closeModal('addAssetModal');
-      saveState();
-      fetchLivePrices();
-      switchTab(name);
-    }
-
-    function handleFormInput(asset, changedField) {
-      const amountEl = document.getElementById(`amount-${asset}`);
-      const priceEl = document.getElementById(`price-${asset}`);
-      const totalEl = document.getElementById(`total-${asset}`);
-
-      let amount = parseNumber(amountEl.value);
-      let price = parseNumber(priceEl.value);
-      let total = parseNumber(totalEl.value);
-
-      if (changedField === 'total') {
-        if (price > 0) amountEl.value = (total / price).toFixed(6);
-        else if (amount > 0) priceEl.value = (total / amount).toFixed(2);
-      } else if (changedField === 'price') {
-        if (total > 0) amountEl.value = (total / price).toFixed(6);
-        else if (amount > 0) totalEl.value = (amount * price).toFixed(2);
-      } else if (changedField === 'amount') {
-        if (price > 0) totalEl.value = (amount * price).toFixed(2);
-        else if (total > 0) priceEl.value = (total / amount).toFixed(2);
-      }
-    }
-
-    function addTransaction(asset) {
-      const type = document.getElementById(`type-${asset}`).value;
-      const strategy = document.getElementById(`strat-${asset}`).value;
-      
-      let amount = parseNumber(document.getElementById(`amount-${asset}`).value);
-      let price = parseNumber(document.getElementById(`price-${asset}`).value);
-      let total = parseNumber(document.getElementById(`total-${asset}`).value);
-      const date = document.getElementById(`date-${asset}`).value;
-
-      if (total > 0 && price > 0 && amount === 0) amount = total / price;
-      if (total > 0 && amount > 0 && price === 0) price = total / amount;
-      if (amount > 0 && price > 0 && total === 0) total = amount * price;
-
-      if (amount <= 0 || price <= 0 || total <= 0) {
-        showToast("Ошибка: Заполните минимум 2 поля");
-        return;
-      }
-
-      state.transactions.push({
-        id: Date.now().toString(),
-        asset,
-        strategy,
-        type,
-        date: date || new Date().toISOString().split('T')[0],
-        amount,
-        price,
-        total
-      });
-
-      document.getElementById(`amount-${asset}`).value = '';
-      document.getElementById(`price-${asset}`).value = '';
-      document.getElementById(`total-${asset}`).value = '';
-
-      saveState();
-      showToast("Сделка сохранена!");
-    }
-
-    function deleteTransaction(id) {
-      state.transactions = state.transactions.filter(t => t.id !== id);
-      saveState();
-    }
-
-    function updateCurrentPrice(asset, val) {
-      state.prices[asset] = parseNumber(val);
-      saveState();
-    }
-
-    function renderTabsHeader() {
-      const container = document.getElementById('tabsHeader');
-      container.innerHTML = '';
-
-      const summaryBtn = document.createElement('button');
-      summaryBtn.className = `tab-btn ${activeTab === 'summary' ? 'active' : ''}`;
-      summaryBtn.setAttribute('data-tab', 'summary');
-      summaryBtn.innerText = '📊 Сводка';
-      summaryBtn.onclick = () => switchTab('summary');
-      container.appendChild(summaryBtn);
-
-      const faqBtn = document.createElement('button');
-      faqBtn.className = `tab-btn ${activeTab === 'faq' ? 'active' : ''}`;
-      faqBtn.setAttribute('data-tab', 'faq');
-      faqBtn.innerText = '📚 Гайд и FAQ';
-      faqBtn.onclick = () => switchTab('faq');
-      container.appendChild(faqBtn);
-
-      getOrderedAssets().forEach(asset => {
-        const btn = document.createElement('button');
-        btn.className = `tab-btn ${activeTab === asset ? 'active' : ''}`;
-        btn.setAttribute('data-tab', asset);
-        const isFav = state.favorites.includes(asset);
-        btn.innerHTML = `${isFav ? '<span class="star-icon">★</span>' : ''} ${asset}`;
-        btn.onclick = () => switchTab(asset);
-        container.appendChild(btn);
-      });
-
-      const addBtn = document.createElement('button');
-      addBtn.className = 'tab-btn btn-add';
-      addBtn.innerText = '+ NEW';
-      addBtn.onclick = () => openModal('addAssetModal');
-      container.appendChild(addBtn);
-    }
-
-    function renderDynamicTabContents() {
-      const container = document.getElementById('dynamicTabsContainer');
-      container.innerHTML = '';
-
-      getOrderedAssets().forEach(asset => {
-        const txs = state.transactions.filter(t => t.asset === asset);
-        
-        let dcaAmount = 0, dcaSpent = 0;
-        let swingAmount = 0, swingSpent = 0, swingRealizedPnL = 0;
-
-        txs.forEach(t => {
-          const cost = t.total || (t.amount * t.price);
-          if (t.type === 'BUY') {
-            if (t.strategy === 'DCA') { 
-              dcaAmount += t.amount; 
-              dcaSpent += cost; 
-            } else { 
-              swingAmount += t.amount; 
-              swingSpent += cost; 
-            }
-          } else {
-            if (t.strategy === 'SWING') {
-              const avgSwing = swingAmount > 0 ? swingSpent / swingAmount : 0;
-              swingRealizedPnL += cost - (t.amount * avgSwing);
-              swingAmount = Math.max(0, swingAmount - t.amount);
-              swingSpent = Math.max(0, swingSpent - (t.amount * avgSwing));
-            } else {
-              const avgDCA = dcaAmount > 0 ? dcaSpent / dcaAmount : 0;
-              dcaAmount = Math.max(0, dcaAmount - t.amount);
-              dcaSpent = Math.max(0, dcaSpent - (t.amount * avgDCA));
-            }
-          }
-        });
-
-        const totalAmount = Math.max(0, dcaAmount + swingAmount);
-        const totalSpent = Math.max(0, dcaSpent + swingSpent);
-        const avgPrice = totalAmount > 0 ? totalSpent / totalAmount : 0;
-        const currentPrice = state.prices[asset] || 0;
-        const currentValue = totalAmount * currentPrice;
-        const pnl = currentValue - totalSpent;
-
-        const dcaRatio = totalAmount > 0 ? (dcaAmount / totalAmount) * 100 : 0;
-        const swingRatio = totalAmount > 0 ? (swingAmount / totalAmount) * 100 : 0;
-
-        const isDefault = ['BTC', 'ETH'].includes(asset);
-        const isFav = state.favorites.includes(asset);
-
-        const tabDiv = document.createElement('div');
-        tabDiv.id = `tab-${asset}`;
-        tabDiv.className = `tab-content ${activeTab === asset ? 'active' : ''}`;
-
-        tabDiv.innerHTML = `
-          <div class="card">
-            <div class="card-title">
-              <span>Статистика ${asset}</span>
-              ${!isDefault ? `<button class="tab-btn" onclick="toggleFavorite('${asset}')">${isFav ? '★ В избранном' : '☆ В избранное'}</button>` : ''}
-            </div>
-
-            <div class="grid-2">
-              <div class="stat-box"><span class="stat-label">Всего монет</span><span class="stat-value">${totalAmount.toFixed(4)}</span></div>
-              <div class="stat-box"><span class="stat-label">Ср. цена баланса</span><span class="stat-value">$${avgPrice.toFixed(2)}</span></div>
-              <div class="stat-box"><span class="stat-label">Вложено всего</span><span class="stat-value">$${totalSpent.toFixed(2)}</span></div>
-              <div class="stat-box"><span class="stat-label">Текущая ценность</span><span class="stat-value">$${currentValue.toFixed(2)}</span></div>
-            </div>
-
-            <div style="margin-top: 16px;">
-              <span class="stat-label">Разделение активов ${asset}</span>
-              <div class="progress-bar-container">
-                <div class="progress-segment bg-dca" style="width: ${dcaRatio}%"></div>
-                <div class="progress-segment bg-swing" style="width: ${swingRatio}%"></div>
-              </div>
-              <div class="legend">
-                <span><b>DCA:</b> ${dcaAmount.toFixed(4)} (${dcaRatio.toFixed(0)}%)</span>
-                <span><b>Swing:</b> ${swingAmount.toFixed(4)} (${swingRatio.toFixed(0)}%)</span>
-              </div>
-            </div>
-
-            <div class="strategy-card-dca">
-              <div class="card-title" style="margin-bottom:6px; color: var(--accent-color);">
-                <span>🔷 DCA Портфель (HODL)</span>
-              </div>
-              <div class="grid-2">
-                <div class="stat-box"><span class="stat-label">Накоплено</span><span class="stat-value">${dcaAmount.toFixed(4)}</span></div>
-                <div class="stat-box"><span class="stat-label">Ср. цена DCA</span><span class="stat-value">$${dcaAmount > 0 ? (dcaSpent / dcaAmount).toFixed(2) : '0.00'}</span></div>
-              </div>
-            </div>
-
-            <div class="strategy-card-swing">
-              <div class="card-title" style="margin-bottom:6px; color: var(--purple);">
-                <span>🟣 Свинг Портфель (Спекуляции)</span>
-              </div>
-              <div class="grid-2">
-                <div class="stat-box"><span class="stat-label">Открытая позиция</span><span class="stat-value">${swingAmount.toFixed(4)}</span></div>
-                <div class="stat-box"><span class="stat-label">Ср. цена входа</span><span class="stat-value">$${swingAmount > 0 ? (swingSpent / swingAmount).toFixed(2) : '0.00'}</span></div>
-                <div class="stat-box" style="grid-column: span 2;">
-                  <span class="stat-label">Зафиксированный Свинг Профит</span>
-                  <span class="stat-value ${swingRealizedPnL >= 0 ? 'green' : 'red'}">${swingRealizedPnL >= 0 ? '+' : ''}$${swingRealizedPnL.toFixed(2)}</span>
-                </div>
-              </div>
-            </div>
-
-            <div class="input-wrapper" style="margin-top:12px;">
-              <label>Текущая цена ${asset} ($)</label>
-              <input type="text" value="${currentPrice}" onchange="updateCurrentPrice('${asset}', this.value)" placeholder="0.00">
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-title">Внести сделку</div>
-            <div class="form-grid">
-              <div class="input-wrapper">
-                <label>Тип сделки</label>
-                <select id="type-${asset}">
-                  <option value="BUY">Покупка</option>
-                  <option value="SELL">Продажа</option>
-                </select>
-              </div>
-              <div class="input-wrapper">
-                <label>
-                  Стратегия 
-                  <span class="info-icon" onclick="openModal('strategyInfoModal')">?</span>
-                </label>
-                <select id="strat-${asset}">
-                  <option value="DCA">DCA (Накопление)</option>
-                  <option value="SWING">Свинг-трейд</option>
-                </select>
-              </div>
-
-              <div class="input-wrapper">
-                <label>Сумма ($)</label>
-                <input type="text" id="total-${asset}" oninput="handleFormInput('${asset}', 'total')" placeholder="100">
-              </div>
-              <div class="input-wrapper">
-                <label>Количество</label>
-                <input type="text" id="amount-${asset}" oninput="handleFormInput('${asset}', 'amount')" placeholder="0.5">
-              </div>
-              <div class="input-wrapper full">
-                <label>Цена исполнения ($)</label>
-                <input type="text" id="price-${asset}" oninput="handleFormInput('${asset}', 'price')" placeholder="200">
-              </div>
-
-              <div class="input-wrapper full">
-                <label>Дата</label>
-                <input type="date" id="date-${asset}" value="${new Date().toISOString().split('T')[0]}">
-              </div>
-              <div class="input-wrapper full">
-                <button class="btn" onclick="addTransaction('${asset}')">Сохранить операцию</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="card">
-            <div class="card-title">История сделок</div>
-            <div class="table-container">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Стратегия</th>
-                    <th>Тип</th>
-                    <th>Сумма ($)</th>
-                    <th>Кол-во</th>
-                    <th>Цена ($)</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${txs.map(t => {
-                    const totalCost = t.total || (t.amount * t.price);
-                    return `
-                    <tr>
-                      <td><span class="badge ${t.strategy === 'DCA' ? 'badge-dca' : 'badge-swing'}">${t.strategy}</span></td>
-                      <td class="${t.type === 'BUY' ? 'green' : 'red'}">${t.type === 'BUY' ? 'Покупка' : 'Продажа'}</td>
-                      <td><b>$${totalCost.toFixed(2)}</b></td>
-                      <td>${t.amount}</td>
-                      <td>$${t.price}</td>
-                      <td style="text-align:right;">
-                        <button class="btn btn-danger" style="padding: 2px 6px; font-size:10px;" onclick="deleteTransaction('${t.id}')">✕</button>
-                      </td>
-                    </tr>
-                    `;
-                  }).join('')}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        `;
-
-        container.appendChild(tabDiv);
-      });
-    }
-
-    function renderSummary() {
-      let totalInvested = 0, totalCurrentValue = 0, totalRealizedPnL = 0;
-      let dcaInvestedTotal = 0, swingInvestedTotal = 0;
-
-      const assetsStats = {};
-      state.assets.forEach(a => {
-        assetsStats[a] = { amount: 0, invested: 0, currentValue: 0, avgPrice: 0 };
-      });
-
-      state.transactions.forEach(t => {
-        const spent = t.total || (t.amount * t.price);
-        if (t.type === 'BUY') {
-          totalInvested += spent;
-          if (t.strategy === 'DCA') dcaInvestedTotal += spent;
-          else swingInvestedTotal += spent;
-
-          if (assetsStats[t.asset]) {
-            assetsStats[t.asset].amount += t.amount;
-            assetsStats[t.asset].invested += spent;
-          }
+        const parsed = JSON.parse(decodeURIComponent(escape(atob(raw))));
+        if (parsed && Array.isArray(parsed.coins)) {
+          state = parsed;
+          saveState();
+          renderAll();
+          closeSyncModal();
+          alert('Портфель успешно восстановлен!');
         } else {
-          if (assetsStats[t.asset]) {
-            const avg = assetsStats[t.asset].amount > 0 ? assetsStats[t.asset].invested / assetsStats[t.asset].amount : 0;
-            if (t.strategy === 'SWING') {
-              totalRealizedPnL += spent - (t.amount * avg);
-            }
-            assetsStats[t.asset].amount = Math.max(0, assetsStats[t.asset].amount - t.amount);
-            assetsStats[t.asset].invested = Math.max(0, assetsStats[t.asset].invested - (t.amount * avg));
-          }
+          throw new Error();
         }
-      });
-
-      state.assets.forEach(a => {
-        const currPrice = state.prices[a] || 0;
-        const val = assetsStats[a].amount * currPrice;
-        assetsStats[a].currentValue = val;
-        totalCurrentValue += val;
-        if (assetsStats[a].amount > 0) {
-          assetsStats[a].avgPrice = assetsStats[a].invested / assetsStats[a].amount;
-        }
-      });
-
-      const totalPnL = totalCurrentValue - totalInvested;
-
-      document.getElementById('summaryTotalInvested').innerText = `$${Math.max(0, totalInvested).toFixed(2)}`;
-      document.getElementById('summaryCurrentValue').innerText = `$${Math.max(0, totalCurrentValue).toFixed(2)}`;
-      
-      const pnlEl = document.getElementById('summaryTotalPnL');
-      pnlEl.innerText = `${totalPnL >= 0 ? '+' : ''}$${totalPnL.toFixed(2)}`;
-      pnlEl.className = `stat-value ${totalPnL >= 0 ? 'green' : 'red'}`;
-
-      const realEl = document.getElementById('summaryRealizedPnL');
-      realEl.innerText = `${totalRealizedPnL >= 0 ? '+' : ''}$${totalRealizedPnL.toFixed(2)}`;
-      realEl.className = `stat-value ${totalRealizedPnL >= 0 ? 'green' : 'red'}`;
-
-      const grandTotal = dcaInvestedTotal + swingInvestedTotal;
-      const dcaPct = grandTotal > 0 ? (dcaInvestedTotal / grandTotal) * 100 : 0;
-      const swingPct = grandTotal > 0 ? (swingInvestedTotal / grandTotal) * 100 : 0;
-
-      document.getElementById('barDCA').style.width = `${dcaPct}%`;
-      document.getElementById('barSwing').style.width = `${swingPct}%`;
-
-      const selectedMonth = document.getElementById('summaryMonthPicker').value;
-      let monthInvested = 0;
-      if (selectedMonth) {
-        state.transactions.forEach(t => {
-          if (t.type === 'BUY' && t.date.startsWith(selectedMonth)) {
-            monthInvested += (t.total || (t.amount * t.price));
-          }
-        });
+      } catch (e) {
+        alert('Неверный код портфеля. Проверьте правильность вставки.');
       }
-      document.getElementById('summaryMonthInvested').innerText = `$${monthInvested.toFixed(2)}`;
-
-      const tbody = document.getElementById('summaryTableBody');
-      tbody.innerHTML = '';
-      state.assets.forEach(asset => {
-        const stat = assetsStats[asset];
-        const pnl = stat.currentValue - stat.invested;
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td><b>${asset}</b></td>
-          <td>${Math.max(0, stat.amount).toFixed(4)}</td>
-          <td>$${stat.avgPrice.toFixed(2)}</td>
-          <td>$${Math.max(0, stat.invested).toFixed(2)}</td>
-          <td class="${pnl >= 0 ? 'green' : 'red'}">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}</td>
-        `;
-        tbody.appendChild(row);
-      });
     }
 
-    function render() {
-      renderTabsHeader();
-      renderDynamicTabContents();
+    // Корзина и автоочистка 60 дней
+    function deleteCoin(coinId) {
+      if (!confirm('Переместить монету в корзину?')) return;
+      const coin = state.coins.find(c => c.id === coinId);
+      if (coin) {
+        coin.deleted = true;
+        coin.deletedAt = Date.now();
+        saveState();
+        renderAll();
+      }
+    }
+
+    function restoreCoin(coinId) {
+      const coin = state.coins.find(c => c.id === coinId);
+      if (coin) {
+        coin.deleted = false;
+        coin.deletedAt = null;
+        saveState();
+        renderAll();
+        renderTrash();
+      }
+    }
+
+    function cleanExpiredTrash() {
+      const SIXTY_DAYS_MS = 60 * 24 * 60 * 60 * 1000;
+      const now = Date.now();
+      const expiredCoinIds = state.coins
+        .filter(c => c.deleted && (now - c.deletedAt > SIXTY_DAYS_MS))
+        .map(c => c.id);
+
+      if (expiredCoinIds.length > 0) {
+        state.coins = state.coins.filter(c => !expiredCoinIds.includes(c.id));
+        state.transactions = state.transactions.filter(t => !expiredCoinIds.includes(t.coinId));
+        saveState();
+      }
+    }
+
+    // Сохранение черновика при поиске на CoinGecko
+    function saveCoinDraft() {
+      const draft = {
+        coinId: document.getElementById('coinIdInput').value,
+        symbol: document.getElementById('coinSymbolInput').value,
+        step: 'add_coin_modal'
+      };
+      localStorage.setItem('tma_coin_draft', JSON.stringify(draft));
+    }
+
+    function checkCoinDraft() {
+      const draftRaw = localStorage.getItem('tma_coin_draft');
+      if (draftRaw) {
+        const draft = JSON.parse(draftRaw);
+        document.getElementById('coinIdInput').value = draft.coinId || '';
+        document.getElementById('coinSymbolInput').value = draft.symbol || '';
+        if (draft.step === 'add_coin_modal') {
+          openAddCoinModal();
+        }
+        localStorage.removeItem('tma_coin_draft');
+      }
+    }
+
+    // Фильтр периодов
+    function handlePeriodChange() {
+      const val = document.getElementById('periodSelect').value;
+      document.getElementById('customDateRange').style.display = (val === 'custom') ? 'flex' : 'none';
       renderSummary();
     }
 
-    async function openSyncModal() {
-      document.getElementById('syncKeyInput').value = state.syncKey || '';
-      openModal('syncModal');
-    }
+    function getPeriodDates() {
+      const mode = document.getElementById('periodSelect').value;
+      const now = new Date();
+      let start = null, end = null;
 
-    async function saveSyncKey() {
-      const input = document.getElementById('syncKeyInput').value.trim();
-      if (input) {
-        state.syncKey = input;
-        await pullFromCloud();
-      } else {
-        await createCloudBin();
+      if (mode === 'current_month') {
+        start = new Date(now.getFullYear(), now.getMonth(), 1);
+        end = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+      } else if (mode === 'prev_month') {
+        start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+      } else if (mode === 'custom') {
+        const sVal = document.getElementById('startDate').value;
+        const eVal = document.getElementById('endDate').value;
+        if (sVal) start = new Date(sVal);
+        if (eVal) end = new Date(eVal + 'T23:59:59');
       }
-      closeModal('syncModal');
-      saveState();
+      return { start, end };
     }
 
-    async function createCloudBin() {
-      try {
-        const res = await fetch('https://api.jsonbin.io/v3/b', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Master-Key': '$2a$10$N1W8fI68z1S3/YqL1J5eUOJ4QvhGq0i/oW8eI6gQ2U.7Y7n8.P09G'
-          },
-          body: JSON.stringify(state)
-        });
-        const data = await res.json();
-        if (data.metadata?.id) {
-          state.syncKey = data.metadata.id;
-          showToast(`Ключ создан: ${state.syncKey}`);
-        }
-      } catch (e) { showToast("Ошибка синхронизации"); }
+    function renderSummary() {
+      const { start, end } = getPeriodDates();
+      const activeCoinIds = state.coins.filter(c => !c.deleted).map(c => c.id);
+
+      const filteredTx = state.transactions.filter(t => {
+        if (!activeCoinIds.includes(t.coinId)) return false;
+        const tDate = new Date(t.date);
+        if (start && tDate < start) return false;
+        if (end && tDate > end) return false;
+        return true;
+      });
+
+      let totalBuy = 0, totalSell = 0;
+      filteredTx.forEach(t => {
+        const sum = t.amount * t.price;
+        if (t.type === 'buy') totalBuy += sum;
+        if (t.type === 'sell') totalSell += sum;
+      });
+
+      document.getElementById('summaryStats').innerHTML = `
+        <div style="display: flex; justify-content: space-around; text-align: center; margin-top: 10px;">
+          <div><div style="color: var(--text-muted); font-size: 12px;">Покупки</div><b style="color: var(--green);">$${totalBuy.toFixed(2)}</b></div>
+          <div><div style="color: var(--text-muted); font-size: 12px;">Продажи</div><b style="color: var(--red);">$${totalSell.toFixed(2)}</b></div>
+          <div><div style="color: var(--text-muted); font-size: 12px;">Профит</div><b>$${(totalSell - totalBuy).toFixed(2)}</b></div>
+        </div>
+      `;
     }
 
-    async function pushToCloud() {
-      if (!state.syncKey) return;
-      try {
-        await fetch(`https://api.jsonbin.io/v3/b/${state.syncKey}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(state)
-        });
-        document.getElementById('syncBtn').classList.add('active');
-      } catch (e) {}
+    function renderCoins() {
+      const activeCoins = state.coins.filter(c => !c.deleted);
+      const container = document.getElementById('coinsList');
+      
+      if (activeCoins.length === 0) {
+        container.innerHTML = `<p style="color: var(--text-muted); text-align: center; font-size: 14px;">Монет пока нет</p>`;
+        return;
+      }
+
+      container.innerHTML = activeCoins.map(c => `
+        <div class="coin-row">
+          <div>
+            <b>${c.symbol.toUpperCase()}</b>
+            <span style="font-size: 12px; color: var(--text-muted);">(${c.id})</span>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="deleteCoin('${c.id}')">🗑️</button>
+        </div>
+      `).join('');
     }
 
-    async function pullFromCloud() {
-      if (!state.syncKey) return;
-      try {
-        const res = await fetch(`https://api.jsonbin.io/v3/b/${state.syncKey}/latest`);
-        const data = await res.json();
-        if (data.record) {
-          state = data.record;
-          render();
-          showToast("Данные загружены!");
-        }
-      } catch (e) { showToast("Ошибка загрузки"); }
+    function renderTrash() {
+      const deletedCoins = state.coins.filter(c => c.deleted);
+      const container = document.getElementById('trashList');
+
+      if (deletedCoins.length === 0) {
+        container.innerHTML = `<p style="color: var(--text-muted); text-align: center; font-size: 14px; padding: 12px;">Корзина пуста</p>`;
+        return;
+      }
+
+      const SIXTY_DAYS_MS = 60 * 24 * 60 * 60 * 1000;
+      const now = Date.now();
+
+      container.innerHTML = deletedCoins.map(c => {
+        const daysLeft = Math.ceil((SIXTY_DAYS_MS - (now - c.deletedAt)) / (1000 * 60 * 60 * 24));
+        return `
+          <div class="coin-row" style="flex-direction: column; align-items: flex-start;">
+            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+              <b>${c.symbol.toUpperCase()} (${c.id})</b>
+              <button class="btn btn-sm" onclick="restoreCoin('${c.id}')">Восстановить</button>
+            </div>
+            <div class="informer-box">
+              ⏳ Данные и история монеты сохраняются ещё ${daysLeft} дн.
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
-    document.getElementById('summaryMonthPicker').value = new Date().toISOString().slice(0, 7);
-    if (state.syncKey) {
-      document.getElementById('syncBtn').classList.add('active');
-      pullFromCloud();
+    // Модальные окна
+    function openSyncModal() { document.getElementById('syncModal').classList.add('active'); }
+    function closeSyncModal() { document.getElementById('syncModal').classList.remove('active'); }
+    function openAddCoinModal() { document.getElementById('addCoinModal').classList.add('active'); }
+    function closeAddCoinModal() { document.getElementById('addCoinModal').classList.remove('active'); }
+    function openTrashModal() { renderTrash(); document.getElementById('trashModal').classList.add('active'); }
+    function closeTrashModal() { document.getElementById('trashModal').classList.remove('active'); }
+    function openFaqModal() { document.getElementById('faqModal').classList.add('active'); }
+    function closeFaqModal() { document.getElementById('faqModal').classList.remove('active'); }
+
+    function renderAll() {
+      renderSummary();
+      renderCoins();
     }
-    
-    fetchLivePrices();
-    render();
-    switchTab('summary');
+
+    initApp();
   </script>
 </body>
 </html>
